@@ -1,5 +1,4 @@
 import * as React from 'react';
-import {findDOMNode} from 'react-dom';
 import invariant from 'invariant';
 
 import Manager from '../Manager';
@@ -40,10 +39,7 @@ export const SortableContext = React.createContext({
   manager: {},
 });
 
-export default function sortableContainer(
-  WrappedComponent,
-  config = {withRef: false},
-) {
+export default function sortableContainer(WrappedComponent) {
   return class WithSortableContainer extends React.Component {
     constructor(props) {
       super(props);
@@ -890,11 +886,9 @@ export default function sortableContainer(
     };
 
     getWrappedInstance() {
-      invariant(
-        config.withRef,
-        'To access the wrapped instance, you need to pass in {withRef: true} as the second argument of the SortableContainer() call',
-      );
-
+      if (this.wrappedInstance.current === null) {
+        throw "SortableContainer needs to receive a WrappedComponent wrapped with 'React.forward' and proper ref setting";
+      }
       return this.wrappedInstance.current;
     }
 
@@ -902,12 +896,10 @@ export default function sortableContainer(
       const {getContainer} = this.props;
 
       if (typeof getContainer !== 'function') {
-        return findDOMNode(this);
+        return this.getWrappedInstance();
       }
 
-      return getContainer(
-        config.withRef ? this.getWrappedInstance() : undefined,
-      );
+      return getContainer(this.getWrappedInstance());
     }
 
     handleKeyDown = (event) => {
@@ -1044,7 +1036,7 @@ export default function sortableContainer(
     };
 
     render() {
-      const ref = config.withRef ? this.wrappedInstance : null;
+      const ref = this.wrappedInstance;
 
       return (
         <SortableContext.Provider value={this.sortableContextValue}>
